@@ -20,7 +20,10 @@ include("Habitat.jl")
 # the minimal perceived information
 include("Perceive.jl")
 
-# construct neural network and how that lives in a being's brain
+# Create bespoke neural network
+include("NeuralNet.jl")
+
+# construct put neural network in being
 include("Brain.jl")
 
 end

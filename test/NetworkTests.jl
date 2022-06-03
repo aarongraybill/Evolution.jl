@@ -28,4 +28,7 @@ net=Evolution.Network([Node1,Node2,Node3])
 
 Evolution.connect_nodes(net)
 
-Evolution.compute_neural_net([(Node1,3.0)],net);
+@testset "Evolution.jl" begin
+    @test Evolution.compute_neural_net([(Node1,3.0)],net)[1][2]≈851;
+end
+

@@ -52,7 +52,9 @@ function trace_ray(ray::Ray,target::Wall)
     else
         A=[u -n]
         d = A\(target.start-o)
-        if 0 ≤ d[2] ≤ 1 && d[1] ≥ 0
+        println(d)
+        dist=norm(target.finish-target.start)
+        if 0 ≤ d[2] ≤ dist && d[1] ≥ 0
             return d[1]
         else
             return Inf
