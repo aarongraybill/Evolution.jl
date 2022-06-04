@@ -50,3 +50,23 @@ function perceive(b::Being,H::Habitat)
 
   return Perception(objects,mins)
 end
+
+function interpret(b::Being,p::Perception,H::Habitat)
+  """Translate perception into something a neural network can accept"""
+  n_rays=length(p.distances)
+  n_pops=length(H.populations)+1
+  d_mat=fill(Inf,(n_rays,n_pops))
+  for (i,obj_num) in enumerate(p.objects)
+    d_mat[i,Int64(obj_num)+1]=p.distances[i]
+  end
+  inv_d = 1 ./ d_mat
+  first_node=b.brain.net.Nodes[getfield.(b.brain.net.Nodes,Ref(:opt_text)).==Ref("health")]
+  out=[(first_node[1],b.health)]
+  for ij ∈ CartesianIndices(inv_d)
+    #println("R=$(ij[1]), P=$(ij[2]-1)")
+    #print(getfield.(b.brain.net.Nodes,Ref(:opt_text)))
+    cur_node=b.brain.net.Nodes[getfield.(b.brain.net.Nodes,Ref(:opt_text)).==Ref("R=$(ij[1]), P=$(ij[2]-1)")]
+    out=vcat(out,(cur_node[1],inv_d[ij]))
+  end
+  return out
+end

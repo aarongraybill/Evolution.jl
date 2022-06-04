@@ -1,19 +1,41 @@
 using Evolution
 using Test
 
-b=Evolution.Being(position=[.7,.1],facing=[1,0],age=5,species="skunk",being_id="31415",radius=.5,view_angle=π,n_rays=3)
+Node1 = Evolution.Node(
+    type="input",
+    layer=1,inputNodes=[],
+    outputNodes=[],
+    bias=0.0
+    )
+b=Evolution.Being(
+    position=[.7,.1],
+    facing=[1.0,0.0],
+    age=5,
+    species="skunk",
+    being_id="31415",
+    radius=.5,
+    view_angle=π,
+    n_rays=3,
+    brain=Evolution.Brain(Evolution.Network([Node1])),
+    health=0.0,
+    n_children=0
+)
+b.brain = Evolution.base_brain(b,2)
 test_wall = Evolution.Wall([1,-1],[1,1])
 test_ray = Evolution.Ray([0,0],[1,1]) # should get forced to magnitude 1
 prey=repeat([b],5)
 prey=Evolution.Population("skunk",prey)
 a=deepcopy(b)
+
 a.species = "wolf"
 pred=repeat([a],3)
 pred=Evolution.Population("wolf",pred)
 
-H = Evolution.Habitat([prey,pred],Evolution.Enclosure())
+H = Evolution.Habitat([prey,pred],Evolution.Enclosure());
 
-Evolution.perceive(b,H)
+p=Evolution.perceive(b,H)
+
+[b.brain=Evolution.scramble_brain(b.brain) for _ in 1:1000];
 
 @testset "Evolution.jl" begin
     @test Evolution.trace_ray(test_ray,test_wall)≈√2

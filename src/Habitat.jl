@@ -7,12 +7,14 @@ and the characteristics of each
 """
 
 @kwdef mutable struct Population
-    species::String #predator,prey,etc
+    species::String = nothing #predator,prey,etc don't call directly infered from species
     beings::Vector{Being}
     id_vec::Vector{String} = nothing # shouldn't specify this directly
     function Population(species,beings)
         id_vec=getfield.(beings,Ref(:being_id))
-        new(species,beings,id_vec)
+        species_vec = unique([b.species for b in beings])
+        @assert length(species_vec)==1 "One species per pop please"
+        new(species_vec[1],beings,id_vec)
     end
 end
 

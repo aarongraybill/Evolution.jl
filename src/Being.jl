@@ -15,16 +15,16 @@ using Base: @kwdef
     radius::Float64
     view_angle::Float64 # angle for cone of vision
     n_rays::Int64 # how many rays to trace
-    #senses::Senses # the being's current inputs
-    #brain::Brain # how being reacts to senses
-    #health::Float64
+    brain::Brain = undef#missing # how being reacts to senses
+    health::Float64 = 0.0
+    n_children::Int64 = 0
 
-    function Being(position,facing,age,species,being_id,radius,view_angle,n_rays)
+    function Being(position,facing,age,species,being_id,radius,view_angle,n_rays,brain,health,n_children)
         if !occursin(species,being_id)
             # create species being id
             being_id= "$(species)_$being_id"
         end
-        new(position,facing,age,species,being_id,radius,view_angle,n_rays)
+        new(position,facing,age,species,being_id,radius,view_angle,n_rays,brain,health,n_children)
     end
 end
 

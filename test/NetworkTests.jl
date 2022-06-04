@@ -15,18 +15,18 @@ Node2 = Evolution.Node(
     )
 Node3 = Evolution.Node(
     type="output",
-    layer=3,
+    layer=500,
     inputNodes=[
         (Node2,4.0),
        (Node1,5.0)
     ],
     outputNodes=[],
-    bias=0.0
+    bias=0.0,
+    opt_text = "Health"
 )
 
 net=Evolution.Network([Node1,Node2,Node3])
-
-Evolution.connect_nodes(net)
+net=Evolution.connect_nodes(net)
 
 @testset "Evolution.jl" begin
     @test Evolution.compute_neural_net([(Node1,3.0)],net)[1][2]≈851;
