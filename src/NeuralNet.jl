@@ -99,6 +99,9 @@ function find_value(targetNode::Node,input_vec::Array{Tuple{Node,Float64}})
             temp_val=val
         end
     end
+    if ismissing(temp_val)
+        println("uh-oh, couldn't find $(targetNode.opt_text)")
+    end
     return temp_val
 end
 
@@ -115,7 +118,7 @@ function compute_neural_net(
     input_vec::Array{Tuple{Node,Float64}},
     net::Network
     )
-    old_vec=input_vec #outputs of last iteration
+    #old_vec=input_vec #outputs of last iteration
     new_vec=input_vec #outputs of this iteraton/lookup table
     for i ∈ 2:net.n_layers # first layer trival
         cur_nodes=get_nodes_in_layer(i,net) # the nodes that need outputs now
@@ -129,13 +132,13 @@ function compute_neural_net(
             for input ∈ inputs #for each input node add to weighted sum
                # println([(o[1].opt_text,o[2]) for o in old_vec])
                 #println()
-                v=find_value(input,old_vec)
+                v=find_value(input,new_vec)
                 w=find_value(input,node.inputNodes)
                 run_sum = run_sum + v*w
             end
             new_vec=vcat(new_vec,[(node,run_sum)]) # add to lookup table
         end
-        old_vec=new_vec #new vec gets used as old vec for next layer
+        #old_vec=new_vec #new vec gets used as old vec for next layer
     end
     output_layer=get_nodes_in_layer(net.n_layers,net) #what nodes are in output
     out=new_vec[[x[1] for x in new_vec].∈Ref(output_layer)] #only return outputs
@@ -159,34 +162,6 @@ end
     end
 end
 
-
-
-
-# for node ∈ net.Nodes
-#     #print(node.layer)
-#     inNodes=node.inputNodes
-#     outNodes=node.outputNodes
-
-#     # anything I list as an input should list me as output
-#     for (i,inNode) ∈ enumerate(inNodes)
-#         #list comprehension to get node not weight
-#         their_outs=inNode[1].outputNodes
-#         their_out_nodes=[x[1] for x in their_outs]
-#         if node ∉ their_out_nodes
-#             inNode[1].outputNodes = vcat(inNode[1].outputNodes,(node,node.inputNodes[i][2]))
-#         end
-#     end
-
-#     # anything I list as an output should list me as an input
-#     for (i,outNode) ∈ enumerate(outNodes)
-#         their_ins=outNode[1].inputNodes
-#         their_in_nodes=[x[1] for x in their_ins]
-#         if node ∉ their_in_nodes
-#             outNode[1].inputNodes = vcat(outNode[1].inputNodes,(node,node.outputNodes[i][2]))
-#         end
-#     end
-# end
-
 function test_neural_net(network::Network,inval::Float64=Float64(π))
     n=deepcopy(network)
     first_layer=get_nodes_in_layer(1,n)
@@ -194,3 +169,37 @@ function test_neural_net(network::Network,inval::Float64=Float64(π))
     return [x[2] for x in compute_neural_net(input,n)]
 end
 
+
+# function compute_neural_net(
+#     input_vec::Array{Tuple{Node,Float64}},
+#     net::Network
+#     )
+#     old_vec=input_vec #outputs of last iteration
+#     new_vec=input_vec #outputs of this iteraton/lookup table
+#     for i ∈ 2:net.n_layers # first layer trival
+#         cur_nodes=get_nodes_in_layer(i,net) # the nodes that need outputs now
+#         #if length(cur_nodes)!=0
+#             #println("Layer $i has $(length(cur_nodes)) nodes")
+#         #end
+#         #@show i
+#         for node in cur_nodes
+#             run_sum=node.bias #implicity resets sum
+#             inputs=[x[1] for x in node.inputNodes] # who feeds inito this node
+#             for input ∈ inputs #for each input node add to weighted sum
+#                # println([(o[1].opt_text,o[2]) for o in old_vec])
+#                 #println()
+#                 if 7>length(old_vec)>5
+#                    print("$(length(old_vec)), layer $i, nodes in previous $(length(get_nodes_in_layer(i-1,net)))")#[node[2] for node in old_vec]
+#                end
+#                 v=find_value(input,old_vec)
+#                 w=find_value(input,node.inputNodes)
+#                 run_sum = run_sum + v*w
+#             end
+#             new_vec=vcat(new_vec,[(node,run_sum)]) # add to lookup table
+#         end
+#         old_vec=new_vec #new vec gets used as old vec for next layer
+#     end
+#     output_layer=get_nodes_in_layer(net.n_layers,net) #what nodes are in output
+#     out=new_vec[[x[1] for x in new_vec].∈Ref(output_layer)] #only return outputs
+#     return out
+# end

@@ -20,10 +20,10 @@ end
 
 @kwdef mutable struct Enclosure
     walls::Vector{Wall} =
-    [Wall([-1,-1],[-1,1]),
-    Wall([-1,1],[1,1]),
-    Wall([1,1],[1,-1]),
-    Wall([1,-1],[-1,-1])]
+    [Wall([-100,-100],[-100,100]),
+    Wall([-100,100],[100,100]),
+    Wall([100,100],[100,-100]),
+    Wall([100,-100],[-100,-100])]
 end
 
 @kwdef mutable struct Habitat

@@ -14,7 +14,7 @@ function kill(b::Being , H::Habitat)
     end
     dead_index = findfirst(compare_to_b,target_species.beings)
     target_species.beings = target_species.beings[1:end .!=dead_index]
-    @show length(target_species.beings)
+    #@show length(target_species.beings)
     new_H = Habitat(
         vcat([target_species],ignored_species),
         H.enclosure

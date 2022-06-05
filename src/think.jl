@@ -11,33 +11,56 @@ relies on the construction of neural networks in NeuralNet.jl
 using Evolution
 
 function base_brain(b::Being,H::Habitat)
-    out=[
-        Node("output,",100,[],[],.5,"reproduce"),
+    if rand_weights
+        out=[
+        Node("output,",100,[],[],5*rand(),"reproduce"),
+        Node("output,",100,[],[],5*rand(),"pivot"),
+        Node("output,",100,[],[],5*rand(),"step")
+        ]
+        out_pairs=[(o,5*rand()) for o ∈ out]
+        bias_temp=5*rand()
+    else
+        out=[
+        Node("output,",100,[],[],0,"reproduce"),
         Node("output,",100,[],[],0,"pivot"),
         Node("output,",100,[],[],0,"step")
-    ]
-    out_pairs=[(o,0.0) for o ∈ out] #start with zero weight,consider random
-    ins=[Node("input",1,[],out_pairs,0,"health")]
+        ]
+        out_pairs=[(o,0.0) for o ∈ out]
+        bias_temp=0
+    end
+    ins=[Node("input",1,[],out_pairs,bias_temp,"health")]
     index_mat = fill(missing,(b.n_rays,(length(H.populations)+1)))
     for ij ∈ CartesianIndices(index_mat)
-        ins=vcat(ins,Node("input",1,[],out_pairs,0.0,"R=$(ij[1]), P=$(ij[2]-1)"))
+        ins=vcat(ins,Node("input",1,[],out_pairs,bias_temp,"R=$(ij[1]), P=$(ij[2]-1)"))
     end
     net=Network(vcat(ins,out))
     connect_nodes(net)
     return Brain(net)
 end
 
-function base_brain(b::Being,H::Int64)
-    out=[
-        Node("output,",100,[],[],.5,"reproduce"),
+
+function base_brain(b::Being,H::Int64,rand_weights::Bool = false)
+    if rand_weights
+        out=[
+        Node("output,",100,[],[],5*rand(),"reproduce"),
+        Node("output,",100,[],[],5*rand(),"pivot"),
+        Node("output,",100,[],[],5*rand(),"step")
+        ]
+        out_pairs=[(o,5*rand()) for o ∈ out]
+        bias_temp=5*rand()
+    else
+        out=[
+        Node("output,",100,[],[],0,"reproduce"),
         Node("output,",100,[],[],0,"pivot"),
         Node("output,",100,[],[],0,"step")
-    ]
-    out_pairs=[(o,0.0) for o ∈ out] #start with zero weight,consider random
-    ins=[Node("input",1,[],out_pairs,0,"health")]
+        ]
+        out_pairs=[(o,0.0) for o ∈ out]
+        bias_temp=0
+    end
+    ins=[Node("input",1,[],out_pairs,bias_temp,"health")]
     index_mat = fill(missing,(b.n_rays,(H+1)))
     for ij ∈ CartesianIndices(index_mat)
-        ins=vcat(ins,Node("input",1,[],out_pairs,0.0,"R=$(ij[1]), P=$(ij[2]-1)"))
+        ins=vcat(ins,Node("input",1,[],out_pairs,bias_temp,"R=$(ij[1]), P=$(ij[2]-1)"))
     end
     net=Network(vcat(ins,out))
     connect_nodes(net)

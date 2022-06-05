@@ -34,4 +34,7 @@ include("reproduce.jl")
 # How to kill a being if they get eaten or starve or what have you
 include("kill.jl")
 
+# how different species behave in a given iteration
+include("act.jl")
+
 end
