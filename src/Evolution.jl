@@ -4,10 +4,10 @@ using Base: @kwdef
 using LinearAlgebra
 using Parameters
 using Random
-
+import NeuralTests as n
 
 # Create bespoke neural network
-include("NeuralNet.jl")
+#include("NeuralNet.jl")
 
 # Create the being class
 include("Being.jl")

@@ -1,4 +1,6 @@
 using Evolution
+using Distributions
+using StatsBase
 
 """
 Given a being (it's brain mostly), the fact that it is reproducing,
@@ -11,49 +13,34 @@ function maxk(a, k)
     return unique(a[b])[k]
 end
 
-function scramble_brain(brain::Brain; scramble=.01,node_prob=.01,node_depth=1.0,layer_prob=.01)
+function scramble_brain(old_brain::Brain; scramble::Float64=.01,node_prob::Float64=.01,node_depth::Int64=3)
     """Given a brain add some randomness and return a new brain
-    scramble is the percentage by which every number changes
-    node_prob is prob of introducing a new node at current layer_prob
-    node_depth is the fraction of nodes in previous layer that connect to new nodes
-    layer_prob is prob of adding a new layer entirely
+    scramble is sd of the change to each weight
+    node_prob is prob of introducing a new node 
+    node_depth is the /average/ number of new connections
     """
-    node_roll=rand()
-    layer_roll=rand()
-    new_net=deepcopy(brain.net)
-    second_biggest_layer = maxk([x.layer for x in new_net.Nodes],2)
-    biggest_layer = maxk([x.layer for x in new_net.Nodes],1)
-    out_nodes = get_nodes_in_layer(biggest_layer,new_net)
-    out_tup = [(o,0.0) for o in out_nodes]
+    @assert node_depth ≥ 2 "Need at least one input and output"
+    brain=deepcopy(old_brain)
 
-    if second_biggest_layer+1 == biggest_layer
-        #print("No room")
-        #don't add a layer if you have no room
-    elseif layer_roll < layer_prob
-        #println("Adding Layer")
-        cur_nodes=get_nodes_in_layer(second_biggest_layer,new_net)
-        n_connections=Int64(ceil(length(cur_nodes)*node_depth))
-        connections=cur_nodes[randperm(length(cur_nodes))[1:n_connections]]
-        id_name=string("L=$(second_biggest_layer+1), N=1, layer start")
-        con_tup = [(c,0.0) for c in connections] #doesn't do anything initially
-        new_node=Node("hidden",second_biggest_layer+1,con_tup,out_tup,0.0,id_name)
-        new_net=Network(vcat(new_net.Nodes,new_node))
-        connect_nodes(new_net)
-    end
-    
-    if second_biggest_layer == 1
-        #can't add another node to input layer
-    elseif node_roll<node_prob
-        # add a new Node
-        #print("add a Node")
-        cur_nodes=get_nodes_in_layer(second_biggest_layer-1,new_net)
-        n_connections=Int64(ceil(length(cur_nodes)*node_depth))
-        connections=cur_nodes[randperm(length(cur_nodes))[1:n_connections]]
-        id_name=string("L=$(second_biggest_layer), N=$(length(get_nodes_in_layer(second_biggest_layer,new_net))+1)")
-        con_tup = [(c,0) for c in connections] #new connections don't do anything initially
-        new_node=Node("hidden",second_biggest_layer,con_tup,out_tup,0.0,id_name)
-        new_net=Network(vcat(new_net.Nodes,new_node))
-        connect_nodes(new_net)
+    node_roll=rand() # will we create a new node or not?
+    if node_roll < node_prob
+        out_nodes = Set(values(brain.outputs)) # the nodes we can't have as inputs, static
+        other_nodes = setdiff(brain.net,nodes,out_nodes) # nodes that can be inputs
+        n_nodes = length(net.nodes)
+        binom_p = (node_depth-2.0)/(n_nodes-2.0)
+        n_pulls_extra = rand(Binomial(n_nodes-2,binom_p))
+        in_1 = rand(other_nodes)
+        out_1 = rand(out_nodes)
+        others = StatsBase.sample(setdiff(brain.net.nodes,in_1,out_1),n_pulls_extra,replace=false)
+        hidden_nodes=length(other_nodes)-length(brain.inputs)
+        new_node = n.add_node!(brain.net,"hidden node $(hidden_nodes+1)")
+        connections = in_1∪others∪out_1
+        for input ∈ connections ∩ other_nodes
+            n.add_edge!(brain.net,input,new_node,0.0)
+        end
+        for output ∈ connections ∩ out_nodes
+            n.add_edge!(brain.net,new_node,output,0.0) 
+        end
     end
 
     # do random scrambling

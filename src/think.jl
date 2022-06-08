@@ -9,67 +9,49 @@ relies on the construction of neural networks in NeuralNet.jl
 """
 
 using Evolution
+import NeuralTests as n
 
-function base_brain(b::Being,H::Habitat)
-    if rand_weights
-        out=[
-        Node("output,",100,[],[],5*rand(),"reproduce"),
-        Node("output,",100,[],[],5*rand(),"pivot"),
-        Node("output,",100,[],[],5*rand(),"step")
-        ]
-        out_pairs=[(o,5*rand()) for o ∈ out]
-        bias_temp=5*rand()
-    else
-        out=[
-        Node("output,",100,[],[],0,"reproduce"),
-        Node("output,",100,[],[],0,"pivot"),
-        Node("output,",100,[],[],0,"step")
-        ]
-        out_pairs=[(o,0.0) for o ∈ out]
-        bias_temp=0
-    end
-    ins=[Node("input",1,[],out_pairs,bias_temp,"health")]
-    index_mat = fill(missing,(b.n_rays,(length(H.populations)+1)))
-    for ij ∈ CartesianIndices(index_mat)
-        ins=vcat(ins,Node("input",1,[],out_pairs,bias_temp,"R=$(ij[1]), P=$(ij[2]-1)"))
-    end
-    net=Network(vcat(ins,out))
-    connect_nodes(net)
-    return Brain(net)
+@kwdef mutable struct Brain
+    net::n.Network
+    inputs::Dict{String,n.Node} # =Dict{String,n.Node}([])
+    outputs::Dict{String,n.Node} # =Dict{String,n.Node}([])
 end
 
 
-function base_brain(b::Being,H::Int64,rand_weights::Bool = false)
-    if rand_weights
-        out=[
-        Node("output,",100,[],[],5*rand(),"reproduce"),
-        Node("output,",100,[],[],5*rand(),"pivot"),
-        Node("output,",100,[],[],5*rand(),"step")
-        ]
-        out_pairs=[(o,5*rand()) for o ∈ out]
-        bias_temp=5*rand()
-    else
-        out=[
-        Node("output,",100,[],[],0,"reproduce"),
-        Node("output,",100,[],[],0,"pivot"),
-        Node("output,",100,[],[],0,"step")
-        ]
-        out_pairs=[(o,0.0) for o ∈ out]
-        bias_temp=0
+function base_brain(n_species::Int64,n_rays::Int64,rand_weight::Bool=true)
+    in_dict = Dict{String,n.Node}()
+    out_dict = Dict{String,n.Node}()
+    weight(rand_weight::Bool) = rand_weight ? randn() : 0
+    net = n.Network()
+
+    #create output nodes
+    n1=n.add_node!(net,"out_reproduce")
+    n2=n.add_node!(net,"out_pivot")
+    merge!(out_dict,Dict("out_reproduce"=>n1,"out_pivot"=>n2))
+    #@show size(out_dict)
+    # health has a slightly different format but is an input 
+    n_h=n.add_node!(net,"in_health")
+    merge!(in_dict,Dict("in_health"=>n_h))
+    for output in values(out_dict)
+        n.add_edge!(net,n_h,output,weight(rand_weight))
     end
-    ins=[Node("input",1,[],out_pairs,bias_temp,"health")]
-    index_mat = fill(missing,(b.n_rays,(H+1)))
-    for ij ∈ CartesianIndices(index_mat)
-        ins=vcat(ins,Node("input",1,[],out_pairs,bias_temp,"R=$(ij[1]), P=$(ij[2]-1)"))
+    for ij in CartesianIndices((1:n_rays,1:(n_species+1)))
+        new_node = n.add_node!(net,"in_R$(ij[1]),S$(ij[2]-1)")
+        merge!(in_dict,Dict("in_R$(ij[1]),S$(ij[2]-1)"=>new_node))
+        for output in values(out_dict)
+            n.add_edge!(net,new_node,output,weight(rand_weight))
+        end
     end
-    net=Network(vcat(ins,out))
-    connect_nodes(net)
-    return Brain(net)
+    return Brain(net,in_dict,out_dict)
 end
 
+function base_being(being_id::String,n_species::Int64=2,n_rays::Int64=5)
+    brain = base_brain(n_species,n_rays)
+    return Being([0,0],[1,0],0,"skunk",being_id,.5, 2π/3,n_rays,brain,1.0,0)
+end
 
-function think(b::Being,p::Perception,H::Habitat)
-    inputs=interpret(b,p,H)
-    outputs=compute_neural_net(inputs,b.brain.net)
+function think(b::Being,p::Perception)
+    inputs=interpret(b,p)
+    outputs=n.compute_neural_net(b.brain.net,inputs,Set(values(b.brain.outputs)))
     return outputs
 end

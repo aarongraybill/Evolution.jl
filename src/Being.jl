@@ -15,7 +15,7 @@ using Base: @kwdef
     radius::Float64
     view_angle::Float64 # angle for cone of vision
     n_rays::Int64 # how many rays to trace
-    brain::Brain = undef#missing # how being reacts to senses
+    brain = undef # how being reacts to senses
     health::Float64 = 0.0
     n_children::Int64 = 0
 

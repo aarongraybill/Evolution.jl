@@ -1,45 +1,31 @@
 using Evolution
 using Test
 
-Node1 = Evolution.Node(
-    type="input",
-    layer=1,inputNodes=[],
-    outputNodes=[],
-    bias=0.0
-    )
+# Node1 = Evolution.Node(
+#     type="input",
+#     layer=1,inputNodes=[],
+#     outputNodes=[],
+#     bias=0.0
+#     )
     
-b=Evolution.Being(
-    position=[.7,.1],
-    facing=[1.0,0.0],
-    age=0,
-    species="skunk",
-    being_id="p1",
-    radius=.5,
-    view_angle=π,
-    n_rays=3,
-    brain=Evolution.Brain(Evolution.Network([Node1])),
-    health=0.0,
-    n_children=0
-)
-b.brain = Evolution.base_brain(b,2)
+b=Evolution.base_being("skunk");
 test_wall = Evolution.Wall([1,-1],[1,1])
 test_ray = Evolution.Ray([0,0],[1,1]) # should get forced to magnitude 1
-prey=[deepcopy(b) for _ in 1:5]
-prey[1].being_id = "p1"
-prey[2].being_id = "p2"
-prey[3].being_id = "p3"
-prey[4].being_id = "p4"
-prey[5].being_id = "p5"
+prey=[deepcopy(b) for _ in 1:5];
+prey[1].being_id = "p1";
+prey[2].being_id = "p2";
+prey[3].being_id = "p3";
+prey[4].being_id = "p4";
+prey[5].being_id = "p5";
+prey=Evolution.Population("skunk",prey);
 
-
-prey=Evolution.Population("skunk",prey)
-a=deepcopy(b)
-a.species = "wolf"
-pred=[deepcopy(a) for _ in 1:3]
-pred[1].being_id = "w1"
-pred[2].being_id = "w2"
-pred[3].being_id = "w3"
-pred=Evolution.Population("wolf",pred)
+a=deepcopy(b);
+a.species = "wolf";
+pred=[deepcopy(a) for _ in 1:3];
+pred[1].being_id = "w1";
+pred[2].being_id = "w2";
+pred[3].being_id = "w3";
+pred=Evolution.Population("wolf",pred);
 
 H = Evolution.Habitat([prey,pred],Evolution.Enclosure());
 
