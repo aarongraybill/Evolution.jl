@@ -33,7 +33,7 @@ function scramble_brain(old_brain::Brain; scramble::Float64=.01,node_prob::Float
         out_1 = rand(out_nodes)
         others = StatsBase.sample(setdiff(brain.net.nodes,in_1,out_1),n_pulls_extra,replace=false)
         hidden_nodes=length(other_nodes)-length(brain.inputs)
-        new_node = n.add_node!(brain.net,"hidden node $(hidden_nodes+1)")
+        new_node = n.add_node!(brain.net,"hidden node $(hidden_nodes+1)",0.0)
         connections = in_1∪others∪out_1
         for input ∈ connections ∩ other_nodes
             n.add_edge!(brain.net,input,new_node,0.0)
