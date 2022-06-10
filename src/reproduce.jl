@@ -13,7 +13,7 @@ function maxk(a, k)
     return unique(a[b])[k]
 end
 
-function scramble_brain(old_brain::Brain; scramble::Float64=.01,node_prob::Float64=.01,node_depth::Int64=3)
+function scramble_brain(old_brain::Brain; scramble::Float64=.01,node_prob::Float64=.001,node_depth::Int64=3)
     """Given a brain add some randomness and return a new brain
     scramble is sd of the change to each weight
     node_prob is prob of introducing a new node 
@@ -25,16 +25,18 @@ function scramble_brain(old_brain::Brain; scramble::Float64=.01,node_prob::Float
     node_roll=rand() # will we create a new node or not?
     if node_roll < node_prob
         out_nodes = Set(values(brain.outputs)) # the nodes we can't have as inputs, static
-        other_nodes = setdiff(brain.net,nodes,out_nodes) # nodes that can be inputs
-        n_nodes = length(net.nodes)
+        other_nodes = setdiff(brain.net.nodes,out_nodes) # nodes that can be inputs
+        n_nodes = length(brain.net.nodes)
         binom_p = (node_depth-2.0)/(n_nodes-2.0)
         n_pulls_extra = rand(Binomial(n_nodes-2,binom_p))
         in_1 = rand(other_nodes)
         out_1 = rand(out_nodes)
-        others = StatsBase.sample(setdiff(brain.net.nodes,in_1,out_1),n_pulls_extra,replace=false)
+        others=[x for x in setdiff(brain.net.nodes,[in_1],[out_1])]
+        selections = StatsBase.sample(1:length(others),n_pulls_extra,replace=false)
+        others = Set(others[selections])
         hidden_nodes=length(other_nodes)-length(brain.inputs)
         new_node = n.add_node!(brain.net,"hidden node $(hidden_nodes+1)",0.0)
-        connections = in_1∪others∪out_1
+        connections = Set([in_1]) ∪ others ∪ Set([out_1])
         for input ∈ connections ∩ other_nodes
             n.add_edge!(brain.net,input,new_node,0.0)
         end
@@ -44,24 +46,12 @@ function scramble_brain(old_brain::Brain; scramble::Float64=.01,node_prob::Float
     end
 
     # do random scrambling
-    for node ∈ new_net.Nodes
-        node.bias=node.bias+randn()*scramble
-    end
-
-    connect_nodes(new_net)
+    [brain.net.biases[node] = bias + randn()*scramble for (node, bias) ∈ brain.net.biases]
     
-    # the last layer has everything as an input so it's convenient to update weights
-    for layer ∈ vcat(1:second_biggest_layer,biggest_layer)
-        nodes=get_nodes_in_layer(layer,new_net)
-        for node in nodes
-            new_weights=[x[2] for x in node.inputNodes]+scramble*randn(length(node.inputNodes))
-            nodes_temp=[x[1] for x in node.inputNodes]
-            node.inputNodes=[(nodes_temp[i],new_weights[i]) for i in 1:length(nodes_temp)]
-            #connect_nodes(new_net)
-        end
-    end
+    # update every weight
+    [brain.net.weights[edge] = weight + randn()*scramble for (edge,weight) ∈ brain.net.weights]
 
-    return Brain(new_net)
+    return brain
 end
 
 import Base: ≈
@@ -78,45 +68,34 @@ function ≈(b1::Being,b2::Being)
     return test
 end
 
-function reproduce(b::Being,H::Habitat)
+function reproduce!(b::Being,H::Habitat)
     """Returns a new habitat with an offspring added
     """
-    #@assert b ∈ reduce(vcat,[x.beings for x in H.populations]) "Being needs to be in population"
-    new_brain=scramble_brain(b.brain)
-    pos_rand = 2π*rand()
-    new_being=Being(
-        position = b.position+1.1*2*b.radius*[cos(pos_rand),sin(pos_rand)],
-        facing = [cos(pos_rand),sin(pos_rand)],
-        age=0,
-        species=b.species,
-        being_id=string("$(b.being_id)→c$(b.n_children+1)"),
-        radius = b.radius,
-        view_angle = b.view_angle,
-        n_rays = b.n_rays,
-        brain = new_brain,
-        health = 1.0
-    )
-    new_pops = deepcopy(H.populations)
-    #println("Looking for $(b.species)")
-    #println("$([pop.species==b.species for pop in new_pops])")
-    target_species = new_pops[[pop.species==b.species for pop in new_pops]][1]
-    ignored_species = new_pops[[pop.species!=b.species for pop in new_pops]]
-    #@show size(ignored_species)
-    target_species.beings = vcat(target_species.beings,[new_being])
-    #println("$([x ≈ b for x in target_species.beings])")
-    parent = target_species.beings[
-        [x ≈ b for x in target_species.beings]
-    ]
-    if length(parent)>0
-        parent=parent[1]
-        parent.n_children = parent.n_children+1
-        #@show typeof((vcat([target_species],ignored_species)))
-        new_H = Habitat(
-            vcat([target_species],ignored_species),
-            H.enclosure
+    if b∈ values(H.populations[b.species].beings) 
+        #@assert b ∈ reduce(vcat,[x.beings for x in H.populations]) "Being needs to be in population"
+        new_brain=scramble_brain(b.brain)
+        pos_rand = 2π*rand()
+        #@show b.being_id
+        new_being=Being(
+            position = b.position+1.1*2*b.radius*[cos(pos_rand),sin(pos_rand)],
+            facing = [cos(pos_rand),sin(pos_rand)],
+            age=0,
+            species=b.species,
+            being_id=string("$(b.being_id)→c$(b.n_children+1)"),
+            radius = b.radius,
+            view_angle = b.view_angle,
+            n_rays = b.n_rays,
+            brain = new_brain,
+            health = 1.0
         )
-        return new_H
-    else
-        return H
+        #new_pops = deepcopy(H.populations)
+        #println("Looking for $(b.species)")
+        #println("$([pop.species==b.species for pop in new_pops])")
+        target_species = H.populations[b.species].beings # a dictionary
+        #@show typeof(target_species)
+        #@assert b ∈ values(target_species)
+        b.n_children = b.n_children+1
+        merge!(target_species,Dict(new_being.being_id=>new_being))
     end
+    return H
 end

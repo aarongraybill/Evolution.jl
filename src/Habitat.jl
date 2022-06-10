@@ -8,13 +8,13 @@ and the characteristics of each
 
 @kwdef mutable struct Population
     species::String = nothing #predator,prey,etc don't call directly infered from species
-    beings::Vector{Being}
-    id_vec::Vector{String} = nothing # shouldn't specify this directly
-    function Population(species,beings)
-        id_vec=getfield.(beings,Ref(:being_id))
+    beings::Dict{String,Being}
+    function Population(beings::Vector{Being})
+        out_dict = Dict{String,Being}()
+        [merge!(out_dict,Dict(b.being_id=>b)) for b in beings]
         species_vec = unique([b.species for b in beings])
         @assert length(species_vec)==1 "One species per pop please"
-        new(species_vec[1],beings,id_vec)
+        new(species_vec[1],out_dict)
     end
 end
 
@@ -27,6 +27,11 @@ end
 end
 
 @kwdef mutable struct Habitat
-    populations::Vector{Population}
+    populations::Dict{String, Population}
     enclosure::Enclosure
+    function Habitat(populations::Vector{Population},enclosure::Enclosure)
+        out_dict = Dict{String, Population}()
+        [merge!(out_dict,Dict(pop.species=>pop)) for pop ∈ populations]
+        new(out_dict,enclosure)
+    end
 end

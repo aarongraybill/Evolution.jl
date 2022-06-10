@@ -7,35 +7,41 @@ using Test
 #     outputNodes=[],
 #     bias=0.0
 #     )
-    
-b=Evolution.base_being("skunk");
+
 test_wall = Evolution.Wall([1,-1],[1,1])
 test_ray = Evolution.Ray([0,0],[1,1]) # should get forced to magnitude 1
-prey=[deepcopy(b) for _ in 1:5];
-prey[1].being_id = "p1";
-prey[2].being_id = "p2";
-prey[3].being_id = "p3";
-prey[4].being_id = "p4";
-prey[5].being_id = "p5";
-prey=Evolution.Population("skunk",prey);
+    
 
-a=deepcopy(b);
-a.species = "wolf";
-pred=[deepcopy(a) for _ in 1:3];
-pred[1].being_id = "w1";
-pred[2].being_id = "w2";
-pred[3].being_id = "w3";
-pred=Evolution.Population("wolf",pred);
+prey = [Evolution.base_being("skunk_p$i",2,3) for i in 1:500];
+prey=Evolution.Population(prey);
+
+pred = [Evolution.base_being("wolf_p$i",2,3,"wolf") for i in 1:300];
+pred=Evolution.Population(pred);
 
 H = Evolution.Habitat([prey,pred],Evolution.Enclosure());
 
-p=Evolution.perceive(b,H)
+# p=Evolution.perceive(get(H.populations["skunk"].beings,"skunk_p1",missing),H);
+# t = Evolution.think(H.populations["skunk"].beings["skunk_p1"],p);
 
-[b.brain=Evolution.scramble_brain(b.brain) for _ in 1:1000];
+# Evolution.reproduce!(H.populations["skunk"].beings["skunk_p1"],H);
+# Evolution.kill!(H.populations["skunk"].beings["skunk_p1→c1"],H);
+
+Evolution.iterate!(H)
+
+
+
+# out1 = Evolution.think(b,p);
+# [b.brain=Evolution.scramble_brain(b.brain,node_depth=5) for _ in 1:10000];
+# out2 = Evolution.think(b,p);
+
+# using BenchmarkTools
+# inputs = Evolution.interpret(get(H.populations[1].beings,"p1",missing),p)
+# @benchmark Evolution.interpret(b,p)
+# import NeuralTests as n
+# @benchmark n.compute_neural_net(b.brain.net,inputs,Set(values(b.brain.outputs)))
 
 @testset "Evolution.jl" begin
     @test Evolution.trace_ray(test_ray,test_wall)≈√2
-    @test isapprox(Evolution.trace_ray(test_ray,b),0.3011143517,rtol=.001)
-    @test getfield.(Evolution.create_rays(b),Ref(:u))≈[[0,-1],[1,0],[0,1]] #test that the heading directions of rays are correct
-
+    @test isapprox(Evolution.trace_ray(test_ray,b),Inf,rtol=.001)
+    @test getfield.(Evolution.create_rays(b),Ref(:u))≈[[0.5000000000000001, -0.8660254037844386], [1.0, 0.0], [0.5000000000000001, 0.8660254037844386]] #test that the heading directions of rays are correct
 end

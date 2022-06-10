@@ -326,7 +326,7 @@ uuid = "ca575930-c2e3-43a9-ace4-1e988b2c1908"
 
 [[NeuralTests]]
 deps = ["Colors", "Parameters", "StatsBase"]
-git-tree-sha1 = "e0b00bf5107c8bb7d70675e59f18f291ee4e9704"
+git-tree-sha1 = "54801a290a15eea322970c1c250e3f1e629bf625"
 repo-rev = "main"
 repo-url = "https://github.com/aarongraybill/NeuralTests.jl.git"
 uuid = "b28eee11-a5ca-401b-8a67-f10515e4190b"

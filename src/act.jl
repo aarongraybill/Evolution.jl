@@ -30,74 +30,76 @@ function hitting_wall(b::Being,H::Habitat)
     return test
 end
 
-function species_cramming(b::Being,H::Habitat)
+function species_cramming(b::Being,H::Habitat;damage=1)
     """Need a function here to count the number of ovelaps"""
-    pop_of_interest=findall(x -> x==b.species,[x.species for x in H.populations])
-    run_sum = 0.0
-    #@show typeof(H.populations[pop_of_interest])
-    for other in H.populations[pop_of_interest][1].beings
-        d=LinearAlgebra.norm(b.position-other.position)
-        if d>(other.radius+b.radius)
-            #skip too far
-        elseif b ≈ other
-            #skip bc same boy
+    pop_of_interest=H.populations[b.species]
+    for (being_id,other) in pop_of_interest.beings
+        if other==b
+            #do nothing bc that's you
         else
-            run_sum = other.health+run_sum
+            d=LinearAlgebra.norm(b.position-other.position)
+            if d>(other.radius+b.radius)
+                #too far, do nothing
+            else 
+                return true
+            end
         end
     end
-    return run_sum
+    return false
 end
 
-## SHOULD PROBABLY KILL BEFORE REPRODUCE OR ELSE WE HAVE SALMON BEHAVIOR
-function act(H_in::Habitat;step_size::Float64=.25)
-    H = deepcopy(H_in)
-    reproduction_list = Node[]
-    kill_list = Node[]
-    for pop in H.populations
-        for being in pop.beings
+"""
+if a being invests r ∈ [0,1] in reproduction, they can move a total distance of
+    step_size*speed*(1-r)
+
+Additionally, step_size says that if an action should take d damage it will now take
+d*step_size damage
+
+Assume that it takes 1/step_size periods in a row of contact to die of cramming
+
+regen is fraction of max health regained in  1/step_size steps
+"""
+function act!(H::Habitat;step_size::Float64=.25,speed::Float64=1.0,regen=.5,max_health=1)
+    reproduction_list = Set{Being}([])
+    kill_list = Set{Being}([])
+    r = regen*max_health*step_size
+    cram_dam = step_size*max_health + r 
+    for (species,pop) in H.populations
+        for (being_id,being) in pop.beings
             p=perceive(being,H)
-            t=think(being,p,H)
-            idea_names = [x[1].opt_text for x ∈ t]
-            reproduce_ind = findall(x-> x == "reproduce",idea_names) # should be 1
-            pivot_ind = findall(x-> x == "pivot",idea_names) # 2
-            step_ind = findall(x-> x == "step",idea_names)  # 3 but just in case
+            t=think(being,p)
 
             #@show t[reproduce_ind][1][2]
-            rep_effort = σ(t[reproduce_ind][1][2])
+            rep_effort = σ(t["out_reproduce"])
             rep_roll = 1-rand()
-            pivot_effort = σ(t[pivot_ind][1][2])*2π
-            step_effort = 2*(σ(t[step_ind][1][2])-.5)
+            pivot_effort = σ(t["out_pivot"])*2π
+            step_effort = step_size*(1-rep_effort)*speed
 
             being.facing = rotate(being.facing,pivot_effort)
-            being.facing = being.facing/sqrt(being.facing⋅being.facing) # normalize
+            #being.facing = being.facing/sqrt(being.facing⋅being.facing) # normalize
             being.position = being.position + being.facing*step_effort*step_size
             #println(being.being_id)
             being.age=being.age+1
-            if being.species == "skunk"
-                being.health=min(being.health-rep_effort-abs(step_effort)+.5,1)
+            ΔH = (-species_cramming(being,H)*cram_dam+r)
+            being.health=min(being.health+ΔH,max_health)
+            if rep_effort*step_size > rep_roll
+                push!(reproduction_list,being)
             end
-            if rep_effort > rep_roll
-                reproduction_list=vcat(reproduction_list,[deepcopy(being)])
-            end
-            being.health = being.health-species_cramming(being,H) #damage from cramming
             if hitting_wall(being,H) || being.health<0
-                kill_list = vcat(kill_list,[deepcopy(being)])
+                push!(kill_list,being)
             end
         end
     end
-  return H, reproduction_list, kill_list
+  return reproduction_list, kill_list
 end
 
-function iterate(H_in::Habitat)
-    H=deepcopy(H_in)
-    H_new, rep_list, kill_list = Evolution.act(H);
+function iterate!(H::Habitat)
+    rep_list, kill_list = Evolution.act!(H);
     for death in kill_list
-        H_new = kill(death,H_new)
+        kill!(death,H)
     end
     for birth ∈ rep_list
-        H_new = reproduce(birth,H_new)
+        H = reproduce!(birth,H)
     end
-
-    return H_new
-
+    #return H_new
 end

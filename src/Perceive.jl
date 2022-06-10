@@ -27,9 +27,10 @@ function perceive(b::Being,H::Habitat)
 
   n_pops = length(H.populations)
   # a vector of vectors for perception of each population
-  for (i,pop) ∈ enumerate(H.populations)
+  for (i,(species,pop)) ∈ enumerate(H.populations)
     object_type = vcat(object_type,repeat([i],length(pop.beings)))
-    for (j,b_t) ∈ enumerate(pop.beings)
+    for (j,(key,b_t)) ∈ enumerate(pop.beings)
+      #@show b==b_t
       if b==b_t #don't perceive yourself, so just set that to infinity
         perception=hcat(perception,repeat([Inf],b.n_rays))
       else
